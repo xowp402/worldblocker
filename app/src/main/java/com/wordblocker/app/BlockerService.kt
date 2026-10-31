@@ -28,16 +28,14 @@ class BlockerService : AccessibilityService() {
         rootInActiveWindow?.let { collect(it, sb, 0) }
         val screen = sb.toString().lowercase()
 
-        // محافظت در دوره‌ی قفل: صفحه‌های تنظیمات مربوط به این برنامه
-        if (locked &&
-            (pkg.contains("settings")  pkg.contains("packageinstaller")  pkg.contains("permissioncontroller")) &&
-            screen.contains("wordblocker")
-        ) {
+        val sensitiveNames = listOf("settings", "packageinstaller", "permissioncontroller")
+        val inSensitiveApp = sensitiveNames.any { pkg.contains(it) }
+
+        if (locked && inSensitiveApp && screen.contains("wordblocker")) {
             trigger("در دوره‌ی قفل نمی‌توانی این برنامه را تغییر بدهی")
             return
         }
 
-        // مسدودسازی کلمه‌ها فقط وقتی اینترنت وصل است
         if (!isOnline()) return
 
         val words = (prefs.getString("words", "") ?: "")
@@ -45,7 +43,8 @@ class BlockerService : AccessibilityService() {
             .map { it.trim().lowercase() }
             .filter { it.isNotEmpty() }
 
-        if (words.any { screen.contains(it) }) {
+        val found = words.any { screen.contains(it) }
+        if (found) {
             trigger("عبارت ممنوع تشخیص داده شد")
         }
     }
